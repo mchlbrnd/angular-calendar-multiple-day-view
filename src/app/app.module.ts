@@ -5,6 +5,7 @@ import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
 import { CalendarModule } from 'angular-calendar';
+import { CalendarExtensionModule } from './calendar-extension/calendar-extension.module';
 
 @NgModule({
   declarations: [
@@ -14,7 +15,8 @@ import { CalendarModule } from 'angular-calendar';
     BrowserModule,
     FormsModule,
     HttpModule,
-    CalendarModule.forRoot()
+    CalendarModule.forRoot(),
+    CalendarExtensionModule
   ],
   providers: [],
   bootstrap: [AppComponent]
