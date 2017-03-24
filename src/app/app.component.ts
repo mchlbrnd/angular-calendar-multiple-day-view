@@ -9,12 +9,17 @@ import { Observable } from 'rxjs';
 })
 export class AppComponent {
   viewDate = Date.now();
-  events$: Observable<CalendarEvent[]> = Observable.of([
+  events$ = Observable.of(<CalendarEvent[]>[
     {
       title: 'Event 1',
       color: {
         primary: 'darkblue',
         secondary: 'lightblue'
+      },
+      draggable: true,
+      resizable: {
+        beforeStart: true,
+        afterEnd: true
       },
       start: new Date('2017-03-24 14:00'),
       end: new Date('2017-03-24 15:00')
