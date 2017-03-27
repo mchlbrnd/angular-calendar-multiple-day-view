@@ -10,14 +10,15 @@ import {
   OnInit,
   OnDestroy
 } from '@angular/core';
-import { getDayView, getDayViewHourGrid, CalendarEvent, DayView, DayViewHour, DayViewHourSegment, DayViewEvent } from 'calendar-utils';
+import { getDayViewHourGrid, CalendarEvent, DayView, DayViewHour, DayViewHourSegment, DayViewEvent } from 'calendar-utils';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription';
 import { ResizeEvent } from 'angular-resizable-element';
-import { addMinutes } from 'date-fns';
+import { addMinutes, differenceInDays, addHours } from 'date-fns';
 import { CalendarDragHelper } from 'angular-calendar/dist/esm/src/providers/calendarDragHelper.provider';
 import { CalendarResizeHelper } from 'angular-calendar/dist/esm/src/providers/calendarResizeHelper.provider';
 import { CalendarEventTimesChangedEvent } from 'angular-calendar/dist/esm/src/interfaces/calendarEventTimesChangedEvent.interface';
+import { getMultipleDayView, MultipleDayView } from '../../util/calendar-utils';
 
 /**
  * @hidden
@@ -36,70 +37,108 @@ const SEGMENT_HEIGHT: number = 30;
  */
 @Component({
   selector: 'mb-calendar-multiple-day-view',
+  styles: [`    
+    .cal-multiple-day-view .cal-day-headers {
+      display: flex;
+      text-align: center;
+    }
+
+    .cal-multiple-day-view .cal-header {
+      flex: 1;
+    }
+  `
+  ],
   template: `
-    <div class="cal-day-view" #dayViewContainer>
-      <mwl-calendar-all-day-event
-        *ngFor="let event of view.allDayEvents"
-        [event]="event"
-        (eventClicked)="eventClicked.emit({event: event})">
-      </mwl-calendar-all-day-event>
-      <div class="cal-hour-rows">
-        <div class="cal-events">
-          <div
-            #event
-            *ngFor="let dayEvent of view?.events"
-            mwlResizable
-            [resizeEdges]="{top: dayEvent.event?.resizable?.beforeStart, bottom: dayEvent.event?.resizable?.afterEnd}"
-            [resizeSnapGrid]="{top: eventSnapSize, bottom: eventSnapSize}"
-            [validateResize]="validateResize"
-            (resizeStart)="resizeStarted(dayEvent, $event, dayViewContainer)"
-            (resizing)="resizing(dayEvent, $event)"
-            (resizeEnd)="resizeEnded(dayEvent)"
-            mwlDraggable
-            [dragAxis]="{x: true, y: dayEvent.event.draggable && !currentResize}"
-            [dragSnapGrid]="{y: eventSnapSize}"
-            [validateDrag]="validateDrag"
-            (dragStart)="dragStart(event, dayViewContainer)"
-            (dragEnd)="eventDragged(dayEvent, $event.y)"
-            class="cal-event"
-            [style.marginTop.px]="dayEvent.top"
-            [style.marginLeft.px]="dayEvent.left + 70"
-            [style.height.px]="dayEvent.height"
-            [style.width.px]="dayEvent.width - 1"
-            [style.backgroundColor]="dayEvent.event.color.secondary"
-            [style.borderColor]="dayEvent.event.color.primary"
-            [class.cal-starts-within-day]="!dayEvent.startsBeforeDay"
-            [class.cal-ends-within-day]="!dayEvent.endsAfterDay"
-            [class.cal-draggable]="dayEvent.event.draggable"
-            [ngClass]="dayEvent.event.cssClass"
-            [mwlCalendarTooltip]="dayEvent.event.title | calendarEventTitle:'dayTooltip':dayEvent.event"
-            [tooltipPlacement]="tooltipPlacement">
-            <mwl-calendar-event-title
-              [event]="dayEvent.event"
-              view="day"
-              (click)="eventClicked.emit({event: dayEvent.event})">
-            </mwl-calendar-event-title>
-            <mwl-calendar-event-actions [event]="dayEvent.event"></mwl-calendar-event-actions>
-          </div>
+    <div class="cal-multiple-day-view" #multipleDayViewContainer>
+      <div class="cal-day-headers" [style.paddingLeft.px]="70">
+        <div
+          class="cal-header"
+          *ngFor="let dayView of view.views"
+          [style.minWidth.px]="dayView?.width"
+          [class.cal-past]="dayView.isPast"
+          [class.cal-today]="dayView.isToday"
+          [class.cal-future]="dayView.isFuture"
+          [class.cal-weekend]="dayView.isWeekend"
+          [class.cal-drag-over]="dayView.dragOver"
+          (click)="dayClicked.emit({date: dayView.viewDate})"
+          mwlDroppable
+          (dragEnter)="dayView.dragOver = true"
+          (dragLeave)="dayView.dragOver = false"
+          (drop)="dayView.dragOver = false; eventDropped.emit({event: $event.dropData.event, newStart: dayView.viewDate})">
+          <b>{{ dayView.viewDate | calendarDate:'weekViewColumnHeader':locale }}</b><br>
+          <span>{{ dayView.viewDate | calendarDate:'weekViewColumnSubHeader':locale }}</span>
         </div>
-        <div class="cal-hour" *ngFor="let hour of hours" [style.minWidth.px]="view?.width + 70">
-          <mwl-calendar-day-view-hour-segment
-            *ngFor="let segment of hour.segments"
-            [segment]="segment"
-            [locale]="locale"
-            (click)="hourSegmentClicked.emit({date: segment.date})"
-            [class.cal-drag-over]="segment.dragOver"
-            mwlDroppable
-            (dragEnter)="segment.dragOver = true"
-            (dragLeave)="segment.dragOver = false"
-            (drop)="segment.dragOver = false; eventDropped($event, segment)">
-          </mwl-calendar-day-view-hour-segment>
+      </div>
+      
+      <div class="cal-day-view" #dayViewContainer>
+        <mwl-calendar-all-day-event
+          *ngFor="let event of view.allDayEvents"
+          [event]="event"
+          (eventClicked)="eventClicked.emit({event: event})">
+        </mwl-calendar-all-day-event>
+        <div class="cal-hour-rows">
+          <div class="cal-events" *ngFor="let dayView of view.views">
+            <div
+              #event
+              *ngFor="let dayEvent of dayView?.events"
+              mwlResizable
+              [resizeEdges]="{top: dayEvent.event?.resizable?.beforeStart, bottom: dayEvent.event?.resizable?.afterEnd}"
+              [resizeSnapGrid]="{top: eventSnapSize, bottom: eventSnapSize}"
+              [validateResize]="validateResize"
+              (resizeStart)="resizeStarted(dayEvent, $event, dayViewContainer)"
+              (resizing)="resizing(dayEvent, $event)"
+              (resizeEnd)="resizeEnded(dayEvent)"
+              mwlDraggable
+              [dragAxis]="{x: dayEvent.event.draggable && !currentResize, y: dayEvent.event.draggable && !currentResize}"
+              [dragSnapGrid]="{y: eventSnapSize}"
+              [validateDrag]="validateDrag"
+              (dragStart)="dragStart(event, dayViewContainer)"
+              (dragEnd)="eventDragged(dayEvent, $event)"
+              class="cal-event"
+              [style.marginTop.px]="dayEvent.top"
+              [style.marginLeft.px]="dayEvent.left + 70"
+              [style.height.px]="dayEvent.height"
+              [style.width.px]="dayEvent.width - 1"
+              [style.backgroundColor]="dayEvent.event.color.secondary"
+              [style.borderColor]="dayEvent.event.color.primary"
+              [class.cal-starts-within-day]="!dayEvent.startsBeforeDay"
+              [class.cal-ends-within-day]="!dayEvent.endsAfterDay"
+              [class.cal-draggable]="dayEvent.event.draggable"
+              [ngClass]="dayEvent.event.cssClass"
+              [mwlCalendarTooltip]="dayEvent.event.title | calendarEventTitle:'dayTooltip':dayEvent.event"
+              [tooltipPlacement]="tooltipPlacement">
+              <mwl-calendar-event-title
+                [event]="dayEvent.event"
+                view="day"
+                (click)="eventClicked.emit({event: dayEvent.event})">
+              </mwl-calendar-event-title>
+              <mwl-calendar-event-actions [event]="dayEvent.event"></mwl-calendar-event-actions>
+            </div>
+          </div>
+          <div class="cal-hour" *ngFor="let hour of hours" [style.minWidth.px]="dayView?.width + 70">
+            <mwl-calendar-day-view-hour-segment
+              *ngFor="let segment of hour.segments"
+              [segment]="segment"
+              [locale]="locale"
+              (click)="hourSegmentClicked.emit({date: segment.date})"
+              [class.cal-drag-over]="segment.dragOver"
+              mwlDroppable
+              (dragEnter)="segment.dragOver = true"
+              (dragLeave)="segment.dragOver = false"
+              (drop)="segment.dragOver = false; eventDropped($event, segment)">
+            </mwl-calendar-day-view-hour-segment>
+          </div>
         </div>
       </div>
     </div>
   `
 })
 export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDestroy {
+
+  /**
+   * The current view date
+   */
+  @Input() numberOfDays: number = 7;
 
   /**
    * The current view date
@@ -190,7 +229,7 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
   /**
    * @hidden
    */
-  view: DayView;
+  view: MultipleDayView;
 
   /**
    * @hidden
@@ -267,6 +306,7 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
     if (
       changes.viewDate ||
       changes.events ||
+      changes.numberOfDays ||
       changes.dayStartHour ||
       changes.dayStartMinute ||
       changes.dayEndHour ||
@@ -337,14 +377,23 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
     this.cdr.markForCheck();
   }
 
-  eventDragged(dayEvent: DayViewEvent, draggedInPixels: number): void {
-    const segments: number = draggedInPixels / this.eventSnapSize;
+  eventDragged(dayEvent: DayViewEvent, event: any): void {
+    let newStart: Date = dayEvent.event.start;
+
+    const days: number = event.x / this.eventWidth;
+    const dayAmountInHours: number = 24 / Math.abs(days);
+    const hoursMoved: number = days * dayAmountInHours;
+    newStart = addHours(newStart, hoursMoved);
+
+    const segments: number = event.y / this.eventSnapSize;
     const segmentAmountInMinutes: number = 60 / this.hourSegments;
     const minutesMoved: number = segments * segmentAmountInMinutes;
-    const newStart: Date = addMinutes(dayEvent.event.start, minutesMoved);
-    let newEnd: Date;
-    if (dayEvent.event.end) {
-      newEnd = addMinutes(dayEvent.event.end, minutesMoved);
+    newStart = addMinutes(newStart, minutesMoved);
+
+    let newEnd: Date = dayEvent.event.end;
+    if (newEnd) {
+      newEnd = addHours(newEnd, hoursMoved);
+      newEnd = addMinutes(newEnd, minutesMoved);
     }
     this.eventTimesChanged.emit({newStart, newEnd, event: dayEvent.event});
   }
@@ -370,9 +419,10 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
   }
 
   private refreshView(): void {
-    this.view = getDayView({
+    this.view = getMultipleDayView({
       events: this.events,
       viewDate: this.viewDate,
+      numberOfDays: this.numberOfDays,
       hourSegments: this.hourSegments,
       dayStart: {
         hour: this.dayStartHour,
@@ -384,6 +434,10 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
       },
       eventWidth: this.eventWidth,
       segmentHeight: SEGMENT_HEIGHT
+    });
+
+    this.view.views.forEach((view, viewIndex) => {
+      view.events.forEach(event => event.left = this.eventWidth * viewIndex);
     });
   }
 
