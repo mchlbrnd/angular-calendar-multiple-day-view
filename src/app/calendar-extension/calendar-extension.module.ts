@@ -1,10 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CalendarWeekDayViewComponent,  } from './components/week-day/calendarWeekDayView.component';
-import { CalendarWeekDayViewHourSegmentComponent  } from './components/week-day/calendarWeekDayViewHourSegment.component';
 import { CalendarModule } from 'angular-calendar';
 import { ResizableModule } from 'angular-resizable-element';
 import { DragAndDropModule } from 'angular-draggable-droppable';
+import { CalendarMultipleDayViewComponent } from './components/days/calendarMultipleDayView.component';
 
 @NgModule({
   imports: [
@@ -14,12 +13,10 @@ import { DragAndDropModule } from 'angular-draggable-droppable';
     CalendarModule.forRoot()
   ],
   declarations: [
-    CalendarWeekDayViewComponent,
-    CalendarWeekDayViewHourSegmentComponent
+    CalendarMultipleDayViewComponent,
   ],
   exports: [
-    CalendarWeekDayViewComponent,
-    CalendarWeekDayViewHourSegmentComponent
+    CalendarMultipleDayViewComponent,
   ]
 })
 export class CalendarExtensionModule { }
