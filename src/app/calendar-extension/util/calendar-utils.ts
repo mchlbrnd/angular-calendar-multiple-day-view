@@ -23,6 +23,7 @@ export interface SingleDayView extends DayView {
 
 export interface GetMultipleDayViewArgs extends GetDayViewArgs {
   numberOfDays: number;
+  dayWidth: number;
 }
 
 export interface MultipleDayView {
@@ -31,15 +32,22 @@ export interface MultipleDayView {
 }
 
 export function getMultipleDayView(multipleDayViewArgs: GetMultipleDayViewArgs): MultipleDayView {
-  const {events = [], viewDate, numberOfDays } = multipleDayViewArgs;
+  const {events = [], viewDate, numberOfDays, dayWidth } = multipleDayViewArgs;
   const view: MultipleDayView = {
     views: [],
     allDayEvents: []
   };
   for (let _numberOfDays = 0; _numberOfDays < numberOfDays; _numberOfDays++) {
     const _multipleDayViewArgs = Object.assign({}, multipleDayViewArgs, {events, viewDate: addDays(viewDate, _numberOfDays)});
-    const singleDayView = <SingleDayView>Object.assign(getDayView(_multipleDayViewArgs), {viewDate: _multipleDayViewArgs.viewDate});
+    const singleDayView = <SingleDayView>Object.assign(
+      getDayView(_multipleDayViewArgs), {
+        viewDate: _multipleDayViewArgs.viewDate
+      });
     view.views.push(singleDayView);
   }
+  view.views.forEach((_view, viewIndex) => {
+    _view.width = dayWidth;
+    _view.events.forEach(event => event.left += dayWidth * viewIndex);
+  });
   return view;
 }

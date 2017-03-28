@@ -8,7 +8,7 @@ import {
   LOCALE_ID,
   Inject,
   OnInit,
-  OnDestroy
+  OnDestroy, ViewChild, ElementRef
 } from '@angular/core';
 import { getDayViewHourGrid, CalendarEvent, DayView, DayViewHour, DayViewHourSegment, DayViewEvent } from 'calendar-utils';
 import { Subject } from 'rxjs/Subject';
@@ -45,16 +45,17 @@ const SEGMENT_HEIGHT: number = 30;
 
     .cal-multiple-day-view .cal-header {
       flex: 1;
+      padding: 6px;
     }
   `
   ],
   template: `
     <div class="cal-multiple-day-view" #multipleDayViewContainer>
-      <div class="cal-day-headers" [style.paddingLeft.px]="70">
+      <div class="cal-day-headers" [style.marginLeft.px]="70">
         <div
           class="cal-header"
           *ngFor="let dayView of view.views"
-          [style.minWidth.px]="dayView?.width"
+          [style.minWidth.px]="dayView.width"
           [class.cal-past]="dayView.isPast"
           [class.cal-today]="dayView.isToday"
           [class.cal-future]="dayView.isFuture"
@@ -76,6 +77,7 @@ const SEGMENT_HEIGHT: number = 30;
           [event]="event"
           (eventClicked)="eventClicked.emit({event: event})">
         </mwl-calendar-all-day-event>
+        
         <div class="cal-hour-rows">
           <div class="cal-events" *ngFor="let dayView of view.views">
             <div
@@ -93,7 +95,7 @@ const SEGMENT_HEIGHT: number = 30;
               [dragSnapGrid]="{y: eventSnapSize}"
               [validateDrag]="validateDrag"
               (dragStart)="dragStart(event, dayViewContainer)"
-              (dragEnd)="eventDragged(dayEvent, $event)"
+              (dragEnd)="eventDragged(event, dayEvent, $event)"
               class="cal-event"
               [style.marginTop.px]="dayEvent.top"
               [style.marginLeft.px]="dayEvent.left + 70"
@@ -115,6 +117,7 @@ const SEGMENT_HEIGHT: number = 30;
               <mwl-calendar-event-actions [event]="dayEvent.event"></mwl-calendar-event-actions>
             </div>
           </div>
+          
           <div class="cal-hour" *ngFor="let hour of hours" [style.minWidth.px]="dayView?.width + 70">
             <mwl-calendar-day-view-hour-segment
               *ngFor="let segment of hour.segments"
@@ -134,6 +137,12 @@ const SEGMENT_HEIGHT: number = 30;
   `
 })
 export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDestroy {
+
+  @ViewChild('dayViewContainer') dayViewContainer: ElementRef;
+
+  private get dayWidth() {
+    return (this.dayViewContainer.nativeElement.clientWidth - 70) / this.numberOfDays;
+  }
 
   /**
    * The current view date
@@ -178,7 +187,7 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
   /**
    * The width in pixels of each event on the view
    */
-  @Input() eventWidth: number = 150;
+  @Input() eventWidth: number = 100;
 
   /**
    * An observable that when emitted on will re-render the current view
@@ -377,22 +386,24 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
     this.cdr.markForCheck();
   }
 
-  eventDragged(dayEvent: DayViewEvent, event: any): void {
+  eventDragged(element: ElementRef, dayEvent: DayViewEvent, event: any): void {
     let newStart: Date = dayEvent.event.start;
+    let newEnd: Date = dayEvent.event.end;
 
-    const days: number = event.x / this.eventWidth;
-    const dayAmountInHours: number = 24 / Math.abs(days);
-    const hoursMoved: number = days * dayAmountInHours;
-    newStart = addHours(newStart, hoursMoved);
+    const days: number = event.x / this.dayWidth;
+    if (Math.abs(days) > .42) {
+      const hoursMoved: number = 24 * Math.floor(days);
+      newStart = addHours(newStart, hoursMoved);
+      if (newEnd) {
+        newEnd = addHours(newEnd, hoursMoved);
+      }
+    }
 
     const segments: number = event.y / this.eventSnapSize;
     const segmentAmountInMinutes: number = 60 / this.hourSegments;
     const minutesMoved: number = segments * segmentAmountInMinutes;
     newStart = addMinutes(newStart, minutesMoved);
-
-    let newEnd: Date = dayEvent.event.end;
     if (newEnd) {
-      newEnd = addHours(newEnd, hoursMoved);
       newEnd = addMinutes(newEnd, minutesMoved);
     }
     this.eventTimesChanged.emit({newStart, newEnd, event: dayEvent.event});
@@ -432,12 +443,9 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
         hour: this.dayEndHour,
         minute: this.dayEndMinute
       },
+      dayWidth: this.dayWidth,
       eventWidth: this.eventWidth,
       segmentHeight: SEGMENT_HEIGHT
-    });
-
-    this.view.views.forEach((view, viewIndex) => {
-      view.events.forEach(event => event.left = this.eventWidth * viewIndex);
     });
   }
 

@@ -46,12 +46,28 @@ export class AppComponent {
         },
         start: new Date('2017-03-28 15:00'),
         end: new Date('2017-03-28 16:00')
+      },
+      {
+        id: 3,
+        title: 'Event 3',
+        color: {
+          primary: 'orange',
+          secondary: 'lightyellow'
+        },
+        draggable: true,
+        resizable: {
+          beforeStart: true,
+          afterEnd: true
+        },
+        start: new Date('2017-03-28 15:30'),
+        end: new Date('2017-03-28 16:30')
       }
     ]
   );
 
   onEventTimesChanged({event, newStart, newEnd}: CalendarEventTimesChangedEvent): void {
     const customEvent = <SomeCustomEvent>event;
+    console.log(event.title, 'newStart', newStart, 'newEnd', newEnd);
     const eventIndex = this.events$.value.findIndex(e => e.id === customEvent.id);
     const events = [
       ...this.events$.value.slice(0, eventIndex),
