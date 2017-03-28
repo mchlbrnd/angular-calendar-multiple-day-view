@@ -81,7 +81,7 @@ const SEGMENT_HEIGHT: number = 30;
         <div class="cal-hour-rows">
           <div class="cal-events" *ngFor="let dayView of view.views">
             <div
-              #event
+              #eventContainer
               *ngFor="let dayEvent of dayView?.events"
               mwlResizable
               [resizeEdges]="{top: dayEvent.event?.resizable?.beforeStart, bottom: dayEvent.event?.resizable?.afterEnd}"
@@ -92,10 +92,10 @@ const SEGMENT_HEIGHT: number = 30;
               (resizeEnd)="resizeEnded(dayEvent)"
               mwlDraggable
               [dragAxis]="{x: dayEvent.event.draggable && !currentResize, y: dayEvent.event.draggable && !currentResize}"
-              [dragSnapGrid]="{y: eventSnapSize}"
+              [dragSnapGrid]="{x: eventSnapSize, y: eventSnapSize}"
               [validateDrag]="validateDrag"
-              (dragStart)="dragStart(event, dayViewContainer)"
-              (dragEnd)="eventDragged(event, dayEvent, $event)"
+              (dragStart)="dragStart(eventContainer, dayViewContainer)"
+              (dragEnd)="eventDragged(dayEvent, $event)"
               class="cal-event"
               [style.marginTop.px]="dayEvent.top"
               [style.marginLeft.px]="dayEvent.left + 70"
@@ -333,7 +333,7 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
     }
   }
 
-  resizeStarted(event: DayViewEvent, resizeEvent: ResizeEvent, dayViewContainer: HTMLElement): void {
+  resizeStarted(event: DayViewEvent, resizeEvent: ResizeEvent, dayViewContainer: any): void {
     this.currentResize = {
       originalTop: event.top,
       originalHeight: event.height,
@@ -354,7 +354,6 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
   }
 
   resizeEnded(dayEvent: DayViewEvent): void {
-
     let segments: number;
     if (this.currentResize.edge === 'top') {
       segments = (dayEvent.top - this.currentResize.originalTop) / this.eventSnapSize;
@@ -380,13 +379,13 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
 
   }
 
-  dragStart(event: HTMLElement, dayViewContainer: HTMLElement): void {
-    const dragHelper: CalendarDragHelper = new CalendarDragHelper(dayViewContainer, event);
+  dragStart(eventElement: any, dayViewContainer: any): void {
+    const dragHelper: CalendarDragHelper = new CalendarDragHelper(dayViewContainer, eventElement);
     this.validateDrag = ({x, y}) => !this.currentResize && dragHelper.validateDrag({x, y});
     this.cdr.markForCheck();
   }
 
-  eventDragged(element: ElementRef, dayEvent: DayViewEvent, event: any): void {
+  eventDragged(dayEvent: DayViewEvent, event: any): void {
     let newStart: Date = dayEvent.event.start;
     let newEnd: Date = dayEvent.event.end;
 
