@@ -1,103 +1,89 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CalendarEvent, CalendarEventTimesChangedEvent } from 'angular-calendar';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { addDays, addHours } from 'date-fns';
 
 export interface SomeCustomEvent extends CalendarEvent {
   id: number;
 }
+
+const eventColors: any[] = [
+  {
+    primary: 'darkblue',
+    secondary: 'lightyellow'
+  },
+  {
+    primary: 'red',
+    secondary: 'lightyellow'
+  },
+  {
+    primary: 'yellow',
+    secondary: 'lightyellow'
+  },
+  {
+    primary: 'darkgreen',
+    secondary: 'lightyellow'
+  },
+  {
+    primary: 'pink',
+    secondary: 'lightyellow'
+  },
+  {
+    primary: 'brown',
+    secondary: 'lightyellow'
+  },
+  {
+    primary: 'violet',
+    secondary: 'lightyellow'
+  }
+];
+
+const getRandomEvent = (id: number, fromDate: Date = new Date()): SomeCustomEvent => {
+  const eventAddDaysToStart = Math.floor((Math.random() * 7));
+  const eventAddHoursToStart = Math.floor((Math.random() * 6) + 1);
+  const eventDurationInHours = Math.floor((Math.random() * 2) + 1);
+  const colorIndex = Math.floor((Math.random() * 5) + 1);
+
+  let start = addDays(fromDate, eventAddDaysToStart);
+  let end = addDays(fromDate, eventAddDaysToStart);
+
+  start = addHours(start, eventAddHoursToStart);
+  end = addHours(end, eventAddHoursToStart + eventDurationInHours);
+  return {
+    id,
+    start,
+    end,
+    title: `Event ${id}`,
+    color: eventColors[colorIndex],
+    draggable: true,
+    resizable: {
+      beforeStart: true,
+      afterEnd: true
+    }
+  };
+};
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnInit{
 
-  viewDate = Date.now();
+  viewDate = new Date();
 
-  private events$ = new BehaviorSubject<SomeCustomEvent[]>(
-    [
-      {
-        id: 1,
-        title: 'Event 1',
-        color: {
-          primary: 'darkblue',
-          secondary: 'lightblue'
-        },
-        draggable: true,
-        resizable: {
-          beforeStart: true,
-          afterEnd: true
-        },
-        start: new Date('2017-03-28 11:00'),
-        end: new Date('2017-03-28 12:00')
-      },
-      {
-        id: 2,
-        title: 'Event 2',
-        color: {
-          primary: 'yellow',
-          secondary: 'lightyellow'
-        },
-        draggable: true,
-        resizable: {
-          beforeStart: true,
-          afterEnd: true
-        },
-        start: new Date('2017-03-28 12:00'),
-        end: new Date('2017-03-28 13:00')
-      },
-      {
-        id: 3,
-        title: 'Event 3',
-        color: {
-          primary: 'darkblue',
-          secondary: 'lightblue'
-        },
-        draggable: true,
-        resizable: {
-          beforeStart: true,
-          afterEnd: true
-        },
-        start: new Date('2017-03-28 13:00'),
-        end: new Date('2017-03-28 14:00')
-      },
-      {
-        id: 4,
-        title: 'Event 4',
-        color: {
-          primary: 'yellow',
-          secondary: 'lightyellow'
-        },
-        draggable: true,
-        resizable: {
-          beforeStart: true,
-          afterEnd: true
-        },
-        start: new Date('2017-03-28 14:00'),
-        end: new Date('2017-03-28 15:00')
-      },
-      {
-        id: 5,
-        title: 'Event 5',
-        color: {
-          primary: 'darkblue',
-          secondary: 'lightblue'
-        },
-        draggable: true,
-        resizable: {
-          beforeStart: true,
-          afterEnd: true
-        },
-        start: new Date('2017-03-28 15:00'),
-        end: new Date('2017-03-28 16:00')
-      }
-    ]
-  );
+  private events$ = new BehaviorSubject<SomeCustomEvent[]>([]);
+
+  ngOnInit(): void {
+    Observable
+      .range(0, 200)
+      .map(id => getRandomEvent(id, new Date('2017-03-28 06:00')))
+      .reduce((events, event) => [...events, event], [])
+      .subscribe((events) => this.events$.next(events));
+  }
 
   onEventTimesChanged({event, newStart, newEnd}: CalendarEventTimesChangedEvent): void {
     const customEvent = <SomeCustomEvent>event;
-    console.log(event.title, 'newStart', newStart, 'newEnd', newEnd);
     const eventIndex = this.events$.value.findIndex(e => e.id === customEvent.id);
     const events = [
       ...this.events$.value.slice(0, eventIndex),
