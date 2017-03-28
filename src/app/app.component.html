@@ -1,7 +1,8 @@
 <mb-calendar-multiple-day-view [events]="(events$ | async) || []"
                                [dayStartHour]="10"
                                [viewDate]="viewDate"
-                               [numberOfDays]="3"
+                               [numberOfDays]="7"
+                               [hourSegments]="4"
                                (eventTimesChanged)="onEventTimesChanged($event)">
 
 </mb-calendar-multiple-day-view>

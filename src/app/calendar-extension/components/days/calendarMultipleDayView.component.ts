@@ -37,15 +37,130 @@ const SEGMENT_HEIGHT: number = 30;
  */
 @Component({
   selector: 'mb-calendar-multiple-day-view',
-  styles: [`    
+  styles: [`
     .cal-multiple-day-view .cal-day-headers {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      -js-display: flex;
       display: flex;
-      text-align: center;
+      margin-bottom: 3px;
+      border: 1px solid #e1e1e1;
+      margin-left: 2px;
+      margin-right: 2px; 
     }
 
-    .cal-multiple-day-view .cal-header {
+    .cal-multiple-day-view .cal-day-headers .cal-header {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
       flex: 1;
-      padding: 6px;
+      text-align: center;
+      padding: 5px; 
+    }
+
+    .cal-multiple-day-view .cal-day-headers .cal-header:not(:last-child) {
+      border-right: 1px solid #e1e1e1; 
+    }
+
+    .cal-multiple-day-view .cal-day-headers .cal-header:hover,
+    .cal-multiple-day-view .cal-day-headers .cal-drag-over {
+      background-color: #ededed; 
+    }
+
+    .cal-multiple-day-view .cal-day-headers span {
+      font-weight: 400;
+      opacity: 0.5; 
+    }
+
+    .cal-multiple-day-view .cal-draggable {
+      cursor: move; 
+    }
+
+    .cal-multiple-day-view .cal-event.cal-starts-within-week {
+      border-top-left-radius: 5px;
+      border-bottom-left-radius: 5px; 
+    }
+
+    .cal-multiple-day-view .cal-event.cal-ends-within-week {
+      border-top-right-radius: 5px;
+      border-bottom-right-radius: 5px; 
+    }
+
+    .cal-multiple-day-view .cal-header.cal-today {
+      background-color: #e8fde7; 
+    }
+
+    .cal-multiple-day-view .cal-header.cal-weekend span {
+      color: #8b0000; 
+    }
+
+    .cal-multiple-day-view .cal-event,
+    .cal-multiple-day-view .cal-header {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-hour-rows {
+      width: 100%;
+      border: solid 1px #e1e1e1;
+      overflow-x: scroll;
+      position: relative; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-hour:nth-child(odd) {
+      background-color: #fafafa; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-hour-segment {
+      height: 30px; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-hour:not(:last-child) .cal-hour-segment,
+    .cal-multiple-day-view .cal-day-view .cal-hour:last-child :not(:last-child) .cal-hour-segment {
+      border-bottom: thin dashed #e1e1e1; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-time {
+      font-weight: bold;
+      padding-top: 5px;
+      width: 70px;
+      text-align: center; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-hour-segment:hover,
+    .cal-multiple-day-view .cal-day-view .cal-drag-over .cal-hour-segment {
+      background-color: #ededed; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-event {
+      position: absolute;
+      border: solid 1px;
+      padding: 5px;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-draggable {
+      cursor: move; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-event.cal-starts-within-day {
+      border-top-left-radius: 5px;
+      border-top-right-radius: 5px; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-event.cal-ends-within-day {
+      border-bottom-left-radius: 5px;
+      border-bottom-right-radius: 5px; 
+    }
+
+    .cal-multiple-day-view .cal-day-view .cal-all-day-event {
+      padding: 8px;
+      border: solid 1px; 
     }
   `
   ],
@@ -55,7 +170,6 @@ const SEGMENT_HEIGHT: number = 30;
         <div
           class="cal-header"
           *ngFor="let dayView of view.views"
-          [style.minWidth.px]="dayView.width"
           [class.cal-past]="dayView.isPast"
           [class.cal-today]="dayView.isToday"
           [class.cal-future]="dayView.isFuture"
@@ -99,7 +213,7 @@ const SEGMENT_HEIGHT: number = 30;
               class="cal-event"
               [style.marginTop.px]="dayEvent.top"
               [style.marginLeft.px]="dayEvent.left + 70"
-              [style.height.px]="dayEvent.height"
+              [style.height.px]="dayEvent.height - 15"
               [style.width.px]="dayEvent.width - 1"
               [style.backgroundColor]="dayEvent.event.color.secondary"
               [style.borderColor]="dayEvent.event.color.primary"

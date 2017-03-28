@@ -1,5 +1,8 @@
 import { CalendarEvent, DayView, getDayView } from 'calendar-utils';
-import { setMinutes, setHours, startOfMinute, startOfDay, endOfDay, isSameSecond, addDays, differenceInMinutes } from 'date-fns';
+/*tslint:disable*/
+import { setMinutes, setHours, startOfMinute, startOfDay, endOfDay, areRangesOverlapping, isSameSecond, addDays, differenceInMinutes, getDay, isSameDay } from 'date-fns';
+
+const WEEKEND_DAY_NUMBERS = [0, 6];
 
 export interface GetDayViewArgs {
   events?: CalendarEvent[];
@@ -32,22 +35,30 @@ export interface MultipleDayView {
 }
 
 export function getMultipleDayView(multipleDayViewArgs: GetMultipleDayViewArgs): MultipleDayView {
-  const {events = [], viewDate, numberOfDays, dayWidth } = multipleDayViewArgs;
-  const view: MultipleDayView = {
+  const today = new Date();
+  const {events = [], viewDate, numberOfDays, dayWidth, eventWidth } = multipleDayViewArgs;
+  const multipleDayView: MultipleDayView = {
     views: [],
     allDayEvents: []
   };
   for (let _numberOfDays = 0; _numberOfDays < numberOfDays; _numberOfDays++) {
-    const _multipleDayViewArgs = Object.assign({}, multipleDayViewArgs, {events, viewDate: addDays(viewDate, _numberOfDays)});
-    const singleDayView = <SingleDayView>Object.assign(
-      getDayView(_multipleDayViewArgs), {
-        viewDate: _multipleDayViewArgs.viewDate
-      });
-    view.views.push(singleDayView);
+    const args = Object.assign({}, multipleDayViewArgs, {events, eventWidth, viewDate: addDays(viewDate, _numberOfDays)});
+    const singleDayView = <SingleDayView>Object.assign(getDayView(args), {
+      viewDate: args.viewDate,
+      isPast: args.viewDate < today,
+      isToday: isSameDay(args.viewDate, today),
+      isFuture: args.viewDate > today,
+      isWeekend: WEEKEND_DAY_NUMBERS.indexOf(getDay(args.viewDate)) > -1
+    });
+    multipleDayView.views.push(singleDayView);
   }
-  view.views.forEach((_view, viewIndex) => {
-    _view.width = dayWidth;
-    _view.events.forEach(event => event.left += dayWidth * viewIndex);
+  multipleDayView.views.forEach((view, viewIndex) => {
+    view.events.forEach(event => {
+      const overlappingEvents = view.events.filter(
+        otherEvent => areRangesOverlapping(event.event.start, event.event.end, otherEvent.event.start, otherEvent.event.end));
+      event.left = (event.left / overlappingEvents.length) + (dayWidth * viewIndex);
+      event.width = dayWidth / overlappingEvents.length;
+    });
   });
-  return view;
+  return multipleDayView;
 }

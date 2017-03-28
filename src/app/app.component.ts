@@ -29,8 +29,8 @@ export class AppComponent {
           beforeStart: true,
           afterEnd: true
         },
-        start: new Date('2017-03-27 11:00'),
-        end: new Date('2017-03-27 12:00')
+        start: new Date('2017-03-28 11:00'),
+        end: new Date('2017-03-28 12:00')
       },
       {
         id: 2,
@@ -44,14 +44,29 @@ export class AppComponent {
           beforeStart: true,
           afterEnd: true
         },
-        start: new Date('2017-03-28 15:00'),
-        end: new Date('2017-03-28 16:00')
+        start: new Date('2017-03-28 12:00'),
+        end: new Date('2017-03-28 13:00')
       },
       {
         id: 3,
         title: 'Event 3',
         color: {
-          primary: 'orange',
+          primary: 'darkblue',
+          secondary: 'lightblue'
+        },
+        draggable: true,
+        resizable: {
+          beforeStart: true,
+          afterEnd: true
+        },
+        start: new Date('2017-03-28 13:00'),
+        end: new Date('2017-03-28 14:00')
+      },
+      {
+        id: 4,
+        title: 'Event 4',
+        color: {
+          primary: 'yellow',
           secondary: 'lightyellow'
         },
         draggable: true,
@@ -59,8 +74,23 @@ export class AppComponent {
           beforeStart: true,
           afterEnd: true
         },
-        start: new Date('2017-03-28 15:30'),
-        end: new Date('2017-03-28 16:30')
+        start: new Date('2017-03-28 14:00'),
+        end: new Date('2017-03-28 15:00')
+      },
+      {
+        id: 5,
+        title: 'Event 5',
+        color: {
+          primary: 'darkblue',
+          secondary: 'lightblue'
+        },
+        draggable: true,
+        resizable: {
+          beforeStart: true,
+          afterEnd: true
+        },
+        start: new Date('2017-03-28 15:00'),
+        end: new Date('2017-03-28 16:00')
       }
     ]
   );
