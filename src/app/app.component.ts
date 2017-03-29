@@ -43,16 +43,23 @@ const getRandomEvent = (id: number, fromDate: Date = new Date()): SomeCustomEven
   const eventAddHoursToStart = Math.floor((Math.random() * 6) + 1);
   const eventDurationInHours = Math.floor((Math.random() * 2) + 1);
   const colorIndex = Math.floor((Math.random() * 5) + 1);
+  const allDay = !Math.floor(Math.random() * 10);
 
   let start = addDays(fromDate, eventAddDaysToStart);
   let end = addDays(fromDate, eventAddDaysToStart);
-
   start = addHours(start, eventAddHoursToStart);
   end = addHours(end, eventAddHoursToStart + eventDurationInHours);
+
+  if (allDay) {
+    const eventAddDaysToEnd = Math.floor((Math.random() * 4) + 3);
+    end = addDays(end, eventAddDaysToEnd);
+  }
+
   return {
     id,
     start,
     end,
+    allDay,
     title: `Event ${id}`,
     color: eventColors[colorIndex],
     draggable: true,
@@ -76,8 +83,8 @@ export class AppComponent implements OnInit{
 
   ngOnInit(): void {
     Observable
-      .range(0, 200)
-      .map(id => getRandomEvent(id, new Date('2017-03-28 06:00')))
+      .range(0, 100)
+      .map(id => getRandomEvent(id, new Date('2017-03-29 06:00')))
       .reduce((events, event) => [...events, event], [])
       .subscribe((events) => this.events$.next(events));
   }

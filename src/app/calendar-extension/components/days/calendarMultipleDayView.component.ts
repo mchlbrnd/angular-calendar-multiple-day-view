@@ -109,20 +109,20 @@ const SEGMENT_HEIGHT: number = 30;
       position: relative; 
     }
 
-    .cal-multiple-day-view .cal-day-view .cal-hour:nth-child(odd) {
+    .cal-multiple-day-view .cal-day-view /deep/ .cal-hour:nth-child(odd) {
       background-color: #fafafa; 
     }
 
-    .cal-multiple-day-view .cal-day-view .cal-hour-segment {
+    .cal-multiple-day-view .cal-day-view /deep/ .cal-hour-segment {
       height: 30px; 
     }
 
-    .cal-multiple-day-view .cal-day-view .cal-hour:not(:last-child) .cal-hour-segment,
-    .cal-multiple-day-view .cal-day-view .cal-hour:last-child :not(:last-child) .cal-hour-segment {
+    .cal-multiple-day-view .cal-day-view /deep/ .cal-hour:not(:last-child) .cal-hour-segment,
+    .cal-multiple-day-view .cal-day-view /deep/ .cal-hour:last-child :not(:last-child) .cal-hour-segment {
       border-bottom: thin dashed #e1e1e1; 
     }
 
-    .cal-multiple-day-view .cal-day-view .cal-time {
+    .cal-multiple-day-view .cal-day-view /deep/ .cal-time {
       font-weight: bold;
       padding-top: 5px;
       width: 70px;
@@ -158,7 +158,7 @@ const SEGMENT_HEIGHT: number = 30;
       border-bottom-right-radius: 5px; 
     }
 
-    .cal-multiple-day-view .cal-day-view .cal-all-day-event {
+    .cal-multiple-day-view .cal-day-view /deep/ .cal-all-day-event {
       padding: 8px;
       border: solid 1px; 
     }
@@ -170,6 +170,7 @@ const SEGMENT_HEIGHT: number = 30;
         <div
           class="cal-header"
           *ngFor="let dayView of view.views"
+          [style.maxWidth.px]="dayWidth"
           [class.cal-past]="dayView.isPast"
           [class.cal-today]="dayView.isToday"
           [class.cal-future]="dayView.isFuture"
@@ -186,11 +187,16 @@ const SEGMENT_HEIGHT: number = 30;
       </div>
       
       <div class="cal-day-view" #dayViewContainer>
-        <mwl-calendar-all-day-event
-          *ngFor="let event of view.allDayEvents"
-          [event]="event"
-          (eventClicked)="eventClicked.emit({event: event})">
-        </mwl-calendar-all-day-event>
+        <template ngFor let-dayView [ngForOf]="view.views">
+          <mwl-calendar-all-day-event
+            *ngFor="let allDayEvent of dayView.allDayEvents"
+            [style.marginLeft.px]="dayView.numberOfDaysFromViewDate * dayWidth + 70"
+            [style.maxWidth.px]="allDayEvent.width"
+            style="display: block;"
+            [event]="allDayEvent"
+            (eventClicked)="eventClicked.emit({event: event})">
+          </mwl-calendar-all-day-event>
+        </template>
         
         <div class="cal-hour-rows">
           <div class="cal-events" *ngFor="let dayView of view.views">
@@ -214,7 +220,7 @@ const SEGMENT_HEIGHT: number = 30;
               [style.marginTop.px]="dayEvent.top"
               [style.marginLeft.px]="dayEvent.left + 70"
               [style.height.px]="dayEvent.height - 15"
-              [style.width.px]="dayEvent.width - 1"
+              [style.maxWidth.px]="dayEvent.width"
               [style.backgroundColor]="dayEvent.event.color.secondary"
               [style.borderColor]="dayEvent.event.color.primary"
               [class.cal-starts-within-day]="!dayEvent.startsBeforeDay"
@@ -254,9 +260,7 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
 
   @ViewChild('dayViewContainer') dayViewContainer: ElementRef;
 
-  private get dayWidth() {
-    return (this.dayViewContainer.nativeElement.clientWidth - 70) / this.numberOfDays;
-  }
+  private dayWidth: number;
 
   /**
    * The current view date
@@ -543,6 +547,8 @@ export class CalendarMultipleDayViewComponent implements OnChanges, OnInit, OnDe
   }
 
   private refreshView(): void {
+    this.dayWidth = (this.dayViewContainer.nativeElement.clientWidth - 70) / this.numberOfDays;
+
     this.view = getMultipleDayView({
       events: this.events,
       viewDate: this.viewDate,
